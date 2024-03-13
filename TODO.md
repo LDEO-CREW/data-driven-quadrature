@@ -25,3 +25,7 @@
 - Finish building the optimization loop (03/08)
 - Get one integration axis working (03/09)
 - Get CVXPY working with Paulina's reduced data (03/09)
+
+# MISC Notes:
+- Points are returned in order of the given integration axes
+- Vector from mapping function must be flattened (Therefore y_ref must be a flat vector)

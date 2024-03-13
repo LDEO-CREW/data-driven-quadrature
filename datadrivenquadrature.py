@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import cvxpy as cp
+from copy import deepcopy as copy
 
 # TODO: rename all functions with specific prefixes to avoid naming conflicts
 # TODO: provide benchmarking for mapping, cost fnc, etc.
@@ -13,12 +14,12 @@ import cvxpy as cp
 # TODO: standardized error messages and trace for incorrect input
 # def error_message(info):
 
-# Returns a deep copy of a 1D array
-def copy(arr):
-    return list(np.copy(arr))
+# # Returns a deep copy of a 1D array
+# def copy(arr):
+#     return copy.deepcopy(arr)
 
-def prob_move(cost_history, T):
-    return np.exp((cost_history[-2] - cost_history[-1])/T)
+def prob_move(current_cost, last_cost, T):
+    return np.exp((last_cost - current_cost)/T)
 
 # Verify cost function on same data evaluates to 0 and cost can be run on y_ref
 def verify_cost_fnc(C, y_ref):
@@ -28,14 +29,15 @@ def verify_cost_fnc(C, y_ref):
             return -1 # standard error
     except:
         return -1
+    
 def evaluate_cost(x, y_ref, M, C):
     return C(M(x), y_ref)
 
 def select_point(sized_integration_axes_list):
-    point = {}
+    point = []
     # TODO: for schemes with multiple variables, do we want to select points without replacement?
     for axis, size in sized_integration_axes_list:
-        point[axis] = random.randrange(size)
+        point.append(random.randrange(size))
     return point
 
 def neighbor(point_set, sized_integration_axes_list):
@@ -48,8 +50,8 @@ def select_point_set(x, sized_integration_axes_list, n_points):
     integration_points = []
     while len(integration_points) < n_points:
         new_point = select_point(sized_integration_axes_list)
-        # TODO: If we want to add point uniqueness, add here!
-        integration_points.append(new_point)
+        if new_point not in integration_points:
+            integration_points.append(new_point)
     return integration_points
 
 def find_weights(v, y_ref, C):
@@ -86,23 +88,34 @@ def anneal_loop(x, y_ref, C, M, params, point_set, sized_integration_axes_list, 
     n_epochs = params['epochs'] if 'epochs' in params.keys() else 5000
     n_success = params['success'] if 'success' in params.keys() else 200
     block_size = params['block_size'] if 'block_size' in params.keys() else 100
-    best_index = 0
+    best_index = (0, 0)
+    best_cost = np.infty
     T_fact = 0.9
 
     optimization_passes = 1
 
     # initial block run to determine starting temperature (Buehler et al., 2010)
-    block_cost_history = np.zeros(block_size)
-    for block_iter in range(block_size):
+    block_cost_history = []
+    block_point_history = []
+    block_weight_history = []
+    for i in range(block_size):
         v = M(x, point_set, x_sup)
         w, c = find_weights(v, y_ref, C)
-        block_cost_history[block_iter] = c
+        block_cost_history.append(c)
+        block_point_history.append(copy(point_set))
+        block_weight_history.append(w)
+        if c <= best_cost:
+            best_cost = c
+            best_index = (0, i)
         point_set = neighbor(point_set, sized_integration_axes_list)
 
+    # take this initial block as the first block of optimization
+    cost_history.append(copy(block_cost_history))
+    point_set_history.append(copy(block_point_history))
+    weight_set_history.append(copy(block_weight_history))
 
     # choose initial temperature s.t. 99% of moves in the initial block would be accepted
     T = -np.mean(np.abs(np.diff(block_cost_history)))/np.log(0.99)
-    print(T, np.mean(block_cost_history), np.std(block_cost_history))
 
     # set initial cost, points, and weights
     v = M(x, point_set, x_sup) # TODO: add req for flattened shape of v
@@ -110,41 +123,46 @@ def anneal_loop(x, y_ref, C, M, params, point_set, sized_integration_axes_list, 
     point_set_history.append(copy(point_set))
     weight_set_history.append(copy(current_weights))
     cost_history.append(current_cost)
+    last_cost = current_cost
 
     # primary optimization loop
-    for epoch in range(n_epochs):
-        print("EPOCH:", epoch)
+    for epoch in range(1, n_epochs):
         block_successes = 0
-        for block in range(block_size):
+        block_cost_history = []
+        block_point_history = []
+        block_weight_history = []
+        for block_idx in range(block_size):
+            print(epoch, block_idx, point_set)
             # Mapping function here allows for a very general use-case with non-linear transforms
             new_point_set = neighbor(point_set, sized_integration_axes_list)
             v = M(x, new_point_set, x_sup) # TODO: add req for flattened shape of v
             current_weights, current_cost = find_weights(v, y_ref, C)
-            point_set_history.append(copy(new_point_set))
-            weight_set_history.append(copy(current_weights))
-            cost_history.append(current_cost)
+            block_cost_history.append(current_cost)
+            block_point_history.append(copy(new_point_set))
+            block_weight_history.append(copy(current_weights))
 
             # update best index if necessary
-            if current_cost < cost_history[best_index]:
-                best_index = optimization_passes
+            if current_cost <= best_cost:
+                best_cost = current_cost
+                best_index = (epoch, block_idx)
                 block_successes += 1
                 point_set = new_point_set
-            elif random.random() < prob_move(cost_history, T):
+            elif random.random() < prob_move(current_cost, last_cost, T):
                 block_successes += 1
                 point_set = new_point_set
+
+            last_cost = current_cost
 
             optimization_passes += 1
             if block_successes >= n_success:
                 break
 
-        block_lengths.append(block)
         temperature_history.append(T)
-        
-        last_block_cost = np.mean(cost_history[-block_lengths[-2]:-block_lengths[-1]])
-        current_block_cost = np.mean(cost_history[-block_lengths[-1]:])
-
-        # decrease temperature if this block had an overall lower cost than the previous block
-        if (current_block_cost <= last_block_cost):
+        cost_history.append(copy(block_cost_history))
+        point_set_history.append(copy(block_point_history))
+        weight_set_history.append(copy(block_weight_history))
+        # decrease temperature if this block had an lower mean cost than the previous block
+        if (np.mean(cost_history[-1]) <= np.mean(cost_history[-2])):
             T *= T_fact
 
         if block_successes == 0:
@@ -160,6 +178,7 @@ def anneal_loop(x, y_ref, C, M, params, point_set, sized_integration_axes_list, 
     return history
 
 def optimize(x, y_ref, C, M, params, x_sup=None, verbose=False):
+    # TODO: do all the initial checks to make sure the input is valid
     integration_axes_list = params['integration_list']
     # TODO: check to make sure all axes are in x
     sized_integration_axes_list = [(axis, len(x[axis])) for axis in integration_axes_list]
