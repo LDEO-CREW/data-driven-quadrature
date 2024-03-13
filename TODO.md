@@ -1,5 +1,6 @@
 # TODOs:
 
+- Graph average cost per block
 - Allow for greater flexibility in cost functions
 - Restructure annealing loop and data recording
 - Add random seed selection for results testing

@@ -45,7 +45,6 @@ def neighbor(point_set, sized_integration_axes_list):
     return point_set_copy
 
 def select_point_set(x, sized_integration_axes_list, n_points):
-    # TODO: should thie integration points be given back as direct values or as indices?
     integration_points = []
     while len(integration_points) < n_points:
         new_point = select_point(sized_integration_axes_list)
@@ -57,12 +56,8 @@ def find_weights(v, y_ref, C):
     # TODO: Currently asking for y_ref and v to both be numpy arrays
     weights = cp.Variable(v.shape[-1], nonneg=True)
     # y_hat = np.zeros(y_ref.shape)
-    # # TODO: Is there a better way to do this?
-    # for index, x in np.ndenumerate(v):
-    #     print(index, index[:-1], index[-1], x)
-    #     print(y_hat[index[:-1]], x, weights[index[-1]])
-    #     y_hat[index[:-1]] = x * weights[index[-1]]
     y_hat = weights @ v.T
+    # TODO: Fix cost functions
     # cost = C(y_hat, y_ref)
     cost = cp.norm(y_ref - y_hat)
     constraint_list = []
@@ -92,8 +87,9 @@ def anneal_loop(x, y_ref, C, M, params, point_set, sized_integration_axes_list, 
     n_success = params['success'] if 'success' in params.keys() else 200
     block_size = params['block_size'] if 'block_size' in params.keys() else 100
     best_index = 0
-    success_count = 0
     T_fact = 0.9
+
+    optimization_passes = 1
 
     # initial block run to determine starting temperature (Buehler et al., 2010)
     block_cost_history = np.zeros(block_size)
@@ -107,7 +103,6 @@ def anneal_loop(x, y_ref, C, M, params, point_set, sized_integration_axes_list, 
     # choose initial temperature s.t. 99% of moves in the initial block would be accepted
     T = -np.mean(np.abs(np.diff(block_cost_history)))/np.log(0.99)
     print(T, np.mean(block_cost_history), np.std(block_cost_history))
-    optimization_passes = 1
 
     # set initial cost, points, and weights
     v = M(x, point_set, x_sup) # TODO: add req for flattened shape of v
@@ -155,7 +150,14 @@ def anneal_loop(x, y_ref, C, M, params, point_set, sized_integration_axes_list, 
         if block_successes == 0:
             break
 
-    return [cost_history, point_set_history, weight_set_history, temperature_history, block_lengths]
+    history = {
+        'cost': cost_history,
+        'point_sets': point_set_history,
+        'weight_sets': weight_set_history,
+        'temperature_history': temperature_history,
+        'best': best_index
+    }
+    return history
 
 def optimize(x, y_ref, C, M, params, x_sup=None, verbose=False):
     integration_axes_list = params['integration_list']
