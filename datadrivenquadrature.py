@@ -11,6 +11,16 @@ def error_message(info):
     """
     print(info, sys.stderr)
 
+def verbose_print(info, verbose, threshold):
+    """Prints optimization messages given a verbosity level
+
+    :param info: string containing message to print
+    :param verbose: user-defined verbosity level to print
+    :param threshold: message threshold to determine whether to print the message
+    """
+    if verbose >= threshold:
+        print(info)
+
 def check_params(x, y_ref, C, M, params, x_sup=None):
     """Checks validity of user-provided data (x and y_ref), cost function (C), map function (M), and parameters (params)
     
@@ -42,19 +52,19 @@ def check_params(x, y_ref, C, M, params, x_sup=None):
     # check if all user-defined parameters are valid
     try:
         # n_points must be a positive integer
-        if params['n_points'] < 1 or not isinstance(params['n_points'], int):
+        if 'n_points' in params and params['n_points'] < 1 or not isinstance(params['n_points'], int):
             error_message("Parameter Error: 'n_points' must be a positive, non-zero integer.")
             return -2
         # epochs must be a positive integer
-        if params['epochs'] < 1 or not isinstance(params['epochs'], int):
+        if 'epochs' in params and params['epochs'] < 1 or not isinstance(params['epochs'], int):
             error_message("Parameter Error: 'epochs' must be a positive, non-zero integer.")
             return -2
         # block_size must be a positive integer
-        if params['block_size'] < 1 or not isinstance(params['block_size'], int):
+        if 'block_size' in params and params['block_size'] < 1 or not isinstance(params['block_size'], int):
             error_message("Parameter Error: 'block_size' must be a positive, non-zero integer.")
             return -2
         # success must be a positive integer less than or equal to than block_size
-        if params['success'] < 1 or not isinstance(params['success'], int) or params['success'] > params['block_size']:
+        if 'success' in params and params['success'] < 1 or not isinstance(params['success'], int) or params['success'] > params['block_size']:
             error_message("Parameter Error: 'success' must be a positive, non-zero integer, less than or equal to block_size.")
             return -2
         if 'random_seed' in params:
@@ -65,6 +75,12 @@ def check_params(x, y_ref, C, M, params, x_sup=None):
             # if valid, set the random seed for the program
             else:
                 random.seed(params['random_seed'])
+        if 'verbose' in params and params['verbose'] not in [0, 1, 2, 3]:
+            # verbose must be an integer between 0 and 3
+            error_message("Parameter Error: 'verbose' must be one of [0, 1, 2, 3].")
+            return -2
+        elif 'verbose' not in params:
+            params['verbose'] = 1
         # solver must be an available and CVXPY-compatible solver
         if 'solver' in params and params['solver'] not in cp.installed_solvers():
             error_message("Solver Error: User chosen solver (" + params['solver'] + ") not a valid/installed solver.")
@@ -208,7 +224,7 @@ def find_weights(v, y_ref, C, solver):
     return weights, cost
 
 
-def anneal_loop(x, y_ref, C, M, params, x_sup=None, verbose=False):
+def anneal_loop(x, y_ref, C, M, params, x_sup=None):
     """Main annealing loop to find the optimal point set and corresponding weights
     
     :param x: xarray dataset containing integration axes
@@ -217,7 +233,6 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None, verbose=False):
     :param M: mapping function
     :param params: dictionary of user-defined parameters for optimization loop and integration axes
     :param x_sup: optional parameter passed to map function
-    :param verbose:
     :returns: history object containing point set, weight, cost, and temperature history of optimization
     """
     cost_history = []
@@ -235,14 +250,13 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None, verbose=False):
     sized_integration_axes_list = [(axis, len(x[axis])) for axis in params['integration_list']]
     point_set = select_point_set(sized_integration_axes_list, params['n_points'])
 
-    optimization_passes = 1
-
     # initial block run to determine starting temperature (Buehler et al., 2010)
     block_cost_history = []
     block_point_history = []
     block_weight_history = []
     for i in range(block_size):
-        print("INITIAL BLOCK: iteration", i)
+        print_str = "INITIAL BLOCK: iteration " + str(i)
+        verbose_print(print_str, params['verbose'], 3)
         v = M(x, point_set, x_sup)
         w, c = find_weights(v, y_ref, C, solver)
         block_cost_history.append(c)
@@ -264,9 +278,6 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None, verbose=False):
     # set initial cost, points, and weights
     v = M(x, point_set, x_sup)
     current_weights, current_cost = find_weights(v, y_ref, C, solver)
-    # point_set_history.append(copy(point_set))
-    # weight_set_history.append(copy(current_weights))
-    # cost_history.append(current_cost)
     last_cost = current_cost
 
     # primary optimization loop
@@ -280,10 +291,13 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None, verbose=False):
             new_point_set = neighbor(point_set, sized_integration_axes_list)
             v = M(x, new_point_set, x_sup)
             current_weights, current_cost = find_weights(v, y_ref, C, solver)
+            
+            #save cost, point set, and weight to history
             block_cost_history.append(current_cost)
             block_point_history.append(copy(new_point_set))
             block_weight_history.append(copy(current_weights))
-            print(epoch, block_idx, point_set, current_cost)
+            print_str = "EPOCH: " + str(epoch) + "\tBLOCK: " + str(block_idx) + "\tCOST: " + "{:.3e}".format(current_cost)
+            verbose_print(print_str, params['verbose'], 3)
 
             # update best index if necessary
             if current_cost <= best_cost:
@@ -291,20 +305,25 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None, verbose=False):
                 best_index = (epoch, block_idx)
                 block_successes += 1
                 point_set = new_point_set
+            # compute probability and accept move if applicable 
             elif random.random() < prob_move(current_cost, last_cost, T):
                 block_successes += 1
                 point_set = new_point_set
 
             last_cost = current_cost
 
-            optimization_passes += 1
             if block_successes >= n_success:
                 break
+
+        print_str = "EPOCH: " + str(epoch) + "\tAVG COST: " + "{:.3e}".format(np.mean(block_cost_history)) + "\tBEST COST: " + "{:.3e}".format(best_cost)
+        verbose_print(print_str, params['verbose'], 2)
 
         temperature_history.append(T)
         cost_history.append(copy(block_cost_history))
         point_set_history.append(copy(block_point_history))
         weight_set_history.append(copy(block_weight_history))
+
+
         # decrease temperature if this block had an lower mean cost than the previous block
         if (np.mean(cost_history[-1]) <= np.mean(cost_history[-2])):
             T *= T_fact
@@ -319,6 +338,10 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None, verbose=False):
         'temperature_history': temperature_history,
         'best': best_index
     }
+    print_str = "OPTIMIZATION COMPLETE\n"
+    print_str += "\tBEST COST LOCATION\tEPOCH: " + str(best_index[0]) + "\tBLOCK: " + str(best_index[1]) + "\n"
+    print_str += "\tBEST COST: " + "{:.3e}".format(cost_history[best_index[0]][best_index[1]])
+    verbose_print(print_str, params['verbose'], 1)
     return history
 
 def optimize(x, y_ref, C, M, params, x_sup=None, verbose=False):

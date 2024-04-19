@@ -1,6 +1,5 @@
 # TODOs:
 
-- Add random seed selection for results testing
 - Add required package in  <code>README.md</code>
 - Build documentation and use case
 -
@@ -22,6 +21,7 @@
 - Provide benchmarking (checks) and finished most of the TODOs                              (04/01)
 - Add random seed selection                                                                 (04/03)
 - Add solver choice                                                                         (04/03)
+- Add verbose parameter
 
 # MISC Notes:
 - Points are returned in order of the given integration axes
