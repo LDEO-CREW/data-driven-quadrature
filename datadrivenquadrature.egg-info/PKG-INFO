@@ -1,3 +1,13 @@
+Metadata-Version: 2.1
+Name: datadrivenquadrature
+Version: 0.1
+Home-page: https://github.com/LDEO-CREW/data-driven-quadrature
+Author: Neal Ma
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: xarray
+Requires-Dist: cvxpy
+
 # datadrivenquadrature
 
 Data Driven Quadrature is a Python package for quadrature-based integration point selection. In many applications, integrals over high-resolution integration axes are calculated repeatedly and can be extremely computationally expensive. This operation can be simplified by selecting integration points and corresponding weights that approximate the integral (Gaussian quadrature). 

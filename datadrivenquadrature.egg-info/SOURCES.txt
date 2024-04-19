@@ -1,0 +1,10 @@
+LICENSE
+README.md
+setup.py
+datadrivenquadrature/__init__.py
+datadrivenquadrature/main.py
+datadrivenquadrature.egg-info/PKG-INFO
+datadrivenquadrature.egg-info/SOURCES.txt
+datadrivenquadrature.egg-info/dependency_links.txt
+datadrivenquadrature.egg-info/requires.txt
+datadrivenquadrature.egg-info/top_level.txt
