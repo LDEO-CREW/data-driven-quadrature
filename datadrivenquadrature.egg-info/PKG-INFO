@@ -1,8 +1,9 @@
 Metadata-Version: 2.1
 Name: datadrivenquadrature
-Version: 0.1
+Version: 0.2
 Home-page: https://github.com/LDEO-CREW/data-driven-quadrature
 Author: Neal Ma
+Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: numpy
 Requires-Dist: xarray

@@ -200,11 +200,11 @@ def find_normalization_vector(x, integration_axes):
 def find_weights(v, y_ref, C, solver):
     """
     
-    :param v:
-    :param y_ref:
-    :param C:
+    :param v: matrix of values returned by mapping function from point set
+    :param y_ref: numpy multi-dimensional array containing reference/target values
+    :param C: cost function
     :param solver: solver to use for optimization
-    :returns:
+    :returns: corresponding weights for each point in the point set and total cost at the end of optimization
     """
     weights = cp.Variable(v.shape[-1], nonneg=True)
     y_hat = weights @ v.T
@@ -344,7 +344,7 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None):
     verbose_print(print_str, params['verbose'], 1)
     return history
 
-def optimize(x, y_ref, C, M, params, x_sup=None, verbose=False):
+def optimize(x, y_ref, C, M, params, x_sup=None):
     """User-called function to check validity of inputs and determine optimal point set
 
     :param x: xarray dataset containing integration axes
@@ -353,7 +353,6 @@ def optimize(x, y_ref, C, M, params, x_sup=None, verbose=False):
     :param M: mapping function
     :param params: dictionary of user-defined parameters for optimization loop and integration axes
     :param x_sup: optional parameter passed to map function
-    :param verbose:
     :returns: history object containing point set, weight, cost, and temperature history of optimization
     """
     if (check_val := check_params(x, y_ref, C, M, params, x_sup)) < 0: return check_val

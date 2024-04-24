@@ -1,7 +1,4 @@
 # TODOs:
-
-- Add required package in  <code>README.md</code>
-- Build documentation and use case
 -
 # TODONEs:
 - Build sandbox problem to use for tests                                                    (03/02)
@@ -21,7 +18,9 @@
 - Provide benchmarking (checks) and finished most of the TODOs                              (04/01)
 - Add random seed selection                                                                 (04/03)
 - Add solver choice                                                                         (04/03)
-- Add verbose parameter
+- Add verbose parameter                                                                     
+- Build documentation and use case                                                      
+- Publish to PyPi
 
 # MISC Notes:
 - Points are returned in order of the given integration axes
@@ -37,4 +36,3 @@
 Next steps:
 - Diataxis documentation: https://diataxis.fr/
 - Publish on "Read the docs"
-- Implement constraints on the points in point_set
