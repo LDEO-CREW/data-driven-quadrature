@@ -160,7 +160,7 @@ def select_point(sized_integration_axes_list):
     # TODO: Add user-defined limit selection
     for axis, size in sized_integration_axes_list:
         point.append(random.randrange(size))
-    return point
+    return point if len(sized_integration_axes_list) != 1 else point[0]
 
 def neighbor(point_set, sized_integration_axes_list):
     """"Returns a neighbor state of a given point set (one point changed)
@@ -353,7 +353,7 @@ def optimize(x, y_ref, C, M, params, x_sup=None):
     :param M: mapping function
     :param params: dictionary of user-defined parameters for optimization loop and integration axes
     :param x_sup: optional parameter passed to map function
-    :returns: history object containing point set, weight, cost, and temperature history of optimization
+    :returns: history object containing 'point_sets', 'weight_sets', 'cost', and 'temperature_history' and 'best' index of optimization
     """
     if (check_val := check_params(x, y_ref, C, M, params, x_sup)) < 0: return check_val
     return anneal_loop(x, y_ref, C, M, params, x_sup=x_sup)

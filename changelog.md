@@ -5,4 +5,4 @@
 
 ## 04.23.2024
 
-Initial package upload to PyPi!
+Initial package upload to PyPi! Version 1.0.0.

@@ -22,7 +22,7 @@ This package implements a linear-programing approach to this optimization proble
 ## Usage
 
 
-Four functions are available for direct user usage:  <code>find_normalization_vector()</code>, <code>check_params()</code>, <code>optimize()</code>, <code>flatten_history()</code>. Functions, signatures, and descriptions are below. A full (and hopefully helpful) tutorial is included [here](./examples/tutorial.ipynb) and a full example can be found [here](./examples/example.ipynb). Note, due to the high volume of data, the example data is not included in this package.
+Four functions are available for direct user usage:  <code>find_normalization_vector()</code>, <code>check_params()</code>, <code>optimize()</code>, <code>flatten_history()</code>. Functions, signatures, and descriptions are below. A full (and hopefully helpful) tutorial is included [here](https://github.com/LDEO-CREW/data-driven-quadrature/blob/main/examples/tutorial.ipynb) and a full example can be found [here](https://github.com/LDEO-CREW/data-driven-quadrature/blob/main/examples/example.ipynb). Note, due to the high volume of data, the example data is not included in this package.
 
 ### Parameters and Functions
 
@@ -79,7 +79,7 @@ User-called function to check validity of inputs and determine optimal point set
     :param M: mapping function
     :param params: dictionary of user-defined parameters for optimization loop and integration axes
     :param x_sup: optional parameter passed to map function
-    :returns: history object containing point set, weight, cost, and temperature history of optimization
+    :returns: history object containing 'point_sets', 'weight_sets', 'cost', and 'temperature_history' and 'best' index of optimization
 
 #### flatten_history()
 
@@ -110,9 +110,10 @@ If you would like to change any of the code in the package, you can directly dow
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/LDEO-CREW/data-driven-quadrature/blob/main/LICENSE) file for details.
 
 ## References
 
 [1] S.A. Buehler, V.O. John, A. Kottayil, M. Milz, P. Eriksson, Efficient radiative transfer simulations for a broadband infrared radiometer—Combining a weighted mean of representative frequencies approach with frequency selection by simulated annealing, Journal of Quantitative Spectroscopy and Radiative Transfer, Volume 111, Issue 4, 2010, Pages 602-615, ISSN 0022-4073, https://doi.org/10.1016/j.jqsrt.2009.10.018.
+
 [2] Czarnecki, P., Polvani, L., & Pincus, R. (2023). Sparse, empirically optimized quadrature for broadband spectral integration. Journal of Advances in Modeling Earth Systems, 15, e2023MS003819. https://doi.org/10.1029/2023MS003819
