@@ -50,7 +50,7 @@ All functions are docstring compatible and information can be printed using the 
         - <code>verbose=1</code>: Only print final summary after optimization
         - <code>verbose=2</code>: Print final and epoch summaries
         - <code>verbose=3</code>: Print all final, epoch, and block summaries
-- <code>x_sup</code>: If any additional data needs to be supplied to the mapping function for any reason, it can be passed in through this OPTIONAL parameter
+- <code>x_sup</code>: If any additional data needs to be supplied to the cost function for any reason, it can be passed in through this OPTIONAL parameter
 
 
 #### find_normalization_vector()
@@ -78,7 +78,7 @@ User-called function to check validity of inputs and determine optimal point set
     :param C: cost function
     :param M: mapping function
     :param params: dictionary of user-defined parameters for optimization loop and integration axes
-    :param x_sup: optional parameter passed to map function
+    :param x_sup: optional parameter passed to cost function
     :returns: history object containing 'point_sets', 'weight_sets', 'cost', and 'temperature_history' and 'best' index of optimization
 
 #### flatten_history()
