@@ -4,6 +4,7 @@ import cvxpy as cp
 import sys
 from copy import deepcopy as copy
 
+
 def error_message(info):
     """Prints an error message to standard error
 
@@ -35,14 +36,14 @@ def check_params(x, y_ref, C, M, params, x_sup=None):
 
     # check if the cost function returns a valid cost value
     try:
-        self_cost = C(y_ref, y_ref).value
+        self_cost = C(y_ref, y_ref, x_sup).value
         # cost function must return an integer or a float
         if not isinstance(self_cost, (int, float)):
             error_message("Cost Function Error: Invalid return type (" + type(self_cost + ") from cost function. Return type must be integer or float."))
             return -1
         # cost function evaluated on two identical reference matrices must return 0
         elif self_cost != 0:
-            error_message("Cost Function Error: Invalid cost function. Cost function evaluated on two instances of reference data must equal zero (C(y_ref, y_ref) == 0).")
+            error_message("Cost Function Error: Invalid cost function. Cost function evaluated on two instances of reference data must equal zero (C(y_ref, y_ref, x_sup) == 0).")
             return -1
     # cost function could not be run for some reason
     except:
@@ -105,7 +106,7 @@ def check_params(x, y_ref, C, M, params, x_sup=None):
         # select a random pointset and calling the mapping function on it\\
         sized_integration_axes_list = [(axis, len(x[axis])) for axis in params['integration_list']]
         test_points = select_point_set(sized_integration_axes_list, params['n_points'])
-        v = M(x, test_points, x_sup)
+        v = M(x, test_points)
         # check proper mapped vector shape in the single-dimensional case
         if len(v.shape) == 2 and v.shape != (y_ref.shape[0], params['n_points']):
             error_message("Map Function Error: Map function returned an object of shape", v.shape, "while", str((y_ref.shape[0], params['n_points'])), "expected.")
@@ -197,7 +198,7 @@ def find_normalization_vector(x, integration_axes):
     """
     return [(abs(x[axis].values[-1] - x[axis].values[0]), min(x[axis].values[-1], x[axis].values[0])) for axis in integration_axes]
 
-def find_weights(v, y_ref, C, solver):
+def find_weights(v, y_ref, C, solver, x_sup):
     """
     
     :param v: matrix of values returned by mapping function from point set
@@ -208,13 +209,13 @@ def find_weights(v, y_ref, C, solver):
     """
     weights = cp.Variable(v.shape[-1], nonneg=True)
     y_hat = weights @ v.T
-    cost = C(y_hat, y_ref)
+    cost = C(y_hat, y_ref, x_sup)
     constraint_list = []
     constraint_list = [cp.sum(weights) == 1.0]
     objective_fnc = cp.Minimize(cost)
     prob = cp.Problem(objective=objective_fnc, constraints=constraint_list)
     prob.solve(max_iters = 1000, solver=solver)
-    if prob.status != 'optimal':
+    if prob.status in ["infeasible", "unbounded"]:
         weights = np.zeros(len(v[0]))
         cost = 10000000 # change this value later
     else:
@@ -232,7 +233,7 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None):
     :param C: cost function
     :param M: mapping function
     :param params: dictionary of user-defined parameters for optimization loop and integration axes
-    :param x_sup: optional parameter passed to map function
+    :param x_sup: optional parameter passed to cost function
     :returns: history object containing point set, weight, cost, and temperature history of optimization
     """
     cost_history = []
@@ -257,8 +258,8 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None):
     for i in range(block_size):
         print_str = "INITIAL BLOCK: iteration " + str(i)
         verbose_print(print_str, params['verbose'], 3)
-        v = M(x, point_set, x_sup)
-        w, c = find_weights(v, y_ref, C, solver)
+        v = M(x, point_set)
+        w, c = find_weights(v, y_ref, C, solver, x_sup)
         block_cost_history.append(c)
         block_point_history.append(copy(point_set))
         block_weight_history.append(w)
@@ -276,8 +277,8 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None):
     T = -np.mean(np.abs(np.diff(block_cost_history)))/np.log(0.99)
 
     # set initial cost, points, and weights
-    v = M(x, point_set, x_sup)
-    current_weights, current_cost = find_weights(v, y_ref, C, solver)
+    v = M(x, point_set)
+    current_weights, current_cost = find_weights(v, y_ref, C, solver, x_sup)
     last_cost = current_cost
 
     # primary optimization loop
@@ -289,8 +290,8 @@ def anneal_loop(x, y_ref, C, M, params, x_sup=None):
         for block_idx in range(block_size):
             # Mapping function here allows for a very general use-case with non-linear transforms
             new_point_set = neighbor(point_set, sized_integration_axes_list)
-            v = M(x, new_point_set, x_sup)
-            current_weights, current_cost = find_weights(v, y_ref, C, solver)
+            v = M(x, new_point_set)
+            current_weights, current_cost = find_weights(v, y_ref, C, solver, x_sup)
             
             #save cost, point set, and weight to history
             block_cost_history.append(current_cost)
@@ -352,7 +353,7 @@ def optimize(x, y_ref, C, M, params, x_sup=None):
     :param C: cost function
     :param M: mapping function
     :param params: dictionary of user-defined parameters for optimization loop and integration axes
-    :param x_sup: optional parameter passed to map function
+    :param x_sup: optional parameter passed to cost function
     :returns: history object containing 'point_sets', 'weight_sets', 'cost', and 'temperature_history' and 'best' index of optimization
     """
     if (check_val := check_params(x, y_ref, C, M, params, x_sup)) < 0: return check_val

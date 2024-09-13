@@ -5,9 +5,6 @@ Home-page: https://github.com/LDEO-CREW/data-driven-quadrature
 Author: Neal Ma
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: numpy
-Requires-Dist: xarray
-Requires-Dist: cvxpy
 
 # datadrivenquadrature
 
@@ -125,6 +122,6 @@ This project is licensed under the MIT License - see the [LICENSE](https://githu
 
 ## References
 
-[1] S.A. Buehler, V.O. John, A. Kottayil, M. Milz, P. Eriksson, Efficient radiative transfer simulations for a broadband infrared radiometerâ€”Combining a weighted mean of representative frequencies approach with frequency selection by simulated annealing, Journal of Quantitative Spectroscopy and Radiative Transfer, Volume 111, Issue 4, 2010, Pages 602-615, ISSN 0022-4073, https://doi.org/10.1016/j.jqsrt.2009.10.018.
+[1] S.A. Buehler, V.O. John, A. Kottayil, M. Milz, P. Eriksson, Efficient radiative transfer simulations for a broadband infrared radiometer—Combining a weighted mean of representative frequencies approach with frequency selection by simulated annealing, Journal of Quantitative Spectroscopy and Radiative Transfer, Volume 111, Issue 4, 2010, Pages 602-615, ISSN 0022-4073, https://doi.org/10.1016/j.jqsrt.2009.10.018.
 
 [2] Czarnecki, P., Polvani, L., & Pincus, R. (2023). Sparse, empirically optimized quadrature for broadband spectral integration. Journal of Advances in Modeling Earth Systems, 15, e2023MS003819. https://doi.org/10.1029/2023MS003819
